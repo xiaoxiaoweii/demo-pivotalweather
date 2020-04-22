@@ -3,6 +3,7 @@
 /* eslint-disable no-mixed-spaces-and-tabs */
 <template>
   <div class="left-container">
+    <!-- 整体 -->
     <el-container>
       <el-header>
         <div>
@@ -79,57 +80,6 @@
         </el-main>
       </el-container>
     </el-container>
-    <!-- <el-row class="tac">
-      <el-col :span="24">
-        <el-menu class="el-menu-vertical-demo" @open="handleOpen" @close="handleClose">
-          <el-submenu index="1">
-            <template slot="title" class="hoverShow" selected>
-              <i class="iconfont iconweixingtu"></i>
-              <span>风云四号</span>
-            </template>
-            <el-menu-item class="second-menu FY" index="1-1">
-              <span>成像仪</span>
-              <fy-imager class="commonThird"></fy-imager>
-            </el-menu-item>
-            <el-menu-item class="second-menu FY" index="1-2">
-              <span>探测仪</span>
-              <fy-detector class="commonThird"></fy-detector>
-            </el-menu-item>
-            <el-menu-item class="second-menu FY" index="1-3">
-              <span>闪电仪</span>
-              <fy-lightning v-on:ToLightning="getLightning" class="commonThird"></fy-lightning>
-            </el-menu-item>
-          </el-submenu>
-          <el-menu-item index="2" class="hoverShow">
-            <i class="iconfont iconweixing icon-rotate"></i>
-            <span slot="title">葵花八号</span>
-            <kh-eight class="commonThird"></kh-eight>
-          </el-menu-item>
-          <el-menu-item index="3" class="hoverShow">
-            <i class="iconfont iconzhandian"></i>
-            <span slot="title">自&ensp;动&ensp;站</span>
-          </el-menu-item>
-          <el-menu-item index="4" class="hoverShow">
-            <i class="iconfont iconleida3"></i>
-            <span slot="title">探空雷达</span>
-            <search-sky-radar :imgPlay="imgPlay" class="commonThird"></search-sky-radar>
-          </el-menu-item>
-          <el-menu-item index="5" class="hoverShow">
-            <i class="iconfont iconweibofushe"></i>
-            <span slot="title">微波辐射</span>
-          </el-menu-item>
-          <el-menu-item index="6" class="hoverShow">
-            <i class="iconfont iconleida"></i>
-            <span slot="title">雷&emsp;&emsp;达</span>
-          </el-menu-item>
-          <el-menu-item index="7" class="hoverShow">
-            <i class="el-icon-s-data"></i>
-            <span slot="title">数值模式</span>
-          </el-menu-item>
-        </el-menu>
-      </el-col>
-    </el-row>-->
-
     <!-- 显示model对话框 -->
     <el-card v-if="showModel" class="model_dialog">
       <div class="content">
@@ -252,6 +202,18 @@
         </div>
       </div>
     </el-card>
+
+    <!-- 时间轴 -->
+    <div>
+      <el-progress :percentage="percentage" :color="customColor"></el-progress>
+      <div class="time-icon">
+        <i class="el-icon-d-arrow-left"></i>
+        <i class="el-icon-arrow-left" @click="decrease"></i>
+        <i class="el-icon-caret-right"></i>
+        <i class="el-icon-arrow-right" @click="increase"></i>
+        <i class="el-icon-d-arrow-right"></i>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -259,7 +221,7 @@
 export default {
   components: {
   },
-  data() {
+  data () {
     return {
       // Parameter 参数 树节点数据
       data: [
@@ -469,18 +431,40 @@ export default {
         "https://i1.pivotalweather.com/sounding_images/gfs_2020042200_006_46.75--102.75.png"
       ],
       // 显示model
-      showModel: false
+      showModel: false,
+      // 进度条
+      percentage: 20,
+      customColor: '#409eff',
+      customColors: [
+        { color: '#f56c6c', percentage: 20 },
+        { color: '#e6a23c', percentage: 40 },
+        { color: '#5cb87a', percentage: 60 },
+        { color: '#1989fa', percentage: 80 },
+        { color: '#6f7ad3', percentage: 100 }
+      ]
     };
   },
   methods: {
     // 点击树节点触发事件
-    handleNodeClick(data) {
+    handleNodeClick (data) {
       console.log(data);
     },
     // 显示model选择框
-    showModelDialog() {
+    showModelDialog () {
       console.log("111");
       this.showModel = !this.showModel;
+    },
+    increase () {
+      this.percentage += 10;
+      if (this.percentage > 100) {
+        this.percentage = 100;
+      }
+    },
+    decrease () {
+      this.percentage -= 10;
+      if (this.percentage < 0) {
+        this.percentage = 0;
+      }
     }
   }
 };
@@ -537,7 +521,7 @@ body > .el-container {
 .clearfix:before,
 .clearfix:after {
   display: table;
-  content: "";
+  content: '';
 }
 .clearfix:after {
   clear: both;
@@ -597,6 +581,14 @@ body > .el-container {
   align-items: center;
   flex: 1;
 }
+/* model对话框结束 */
+/* 进度条开始 */
+.time-icon {
+  font-size: 24px;
+  font-weight: bold;
+  color: black;
+}
+/* 进度条结束 */
 /*#app .left-container .el-menu{
     overflow: visible !important;
   }

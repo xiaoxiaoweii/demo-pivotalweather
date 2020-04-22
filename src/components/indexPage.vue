@@ -2,21 +2,22 @@
   <div id="app2">
     <div id="cesiumContainer"></div>
     <canvas id="bg_canvas"></canvas>
-    <left-bar :imgPlayRoot="imgPlayRootOn"></left-bar>
+    <pivotal-weather></pivotal-weather>
+    
   </div>
 </template>
 
 <script>
 
 // 侧边栏
-import leftBar from '@/components/sideTools/leftBar'
+import pivotalWeather from '@/components/tools/pivotalWeather'
 
 import Map from '@/components/mixin/map.js'
 import '@/styles/indexPage.scss'
 export default {
   name: 'app',
   components: {
-    leftBar
+    pivotalWeather
   },
   mixins: [Map]
 }
