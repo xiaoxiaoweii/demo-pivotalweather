@@ -1,8 +1,8 @@
 {
-  "name": "",
+  "name": "febs-cloud-web",
   "version": "4.2.1",
-  "description": "",
-  "author": "xiaoxiaoweii",
+  "description": "febs cloud微服务权限系统前端",
+  "author": "MrBird",
   "license": "Apache 2.0",
   "scripts": {
     "dev": "vue-cli-service serve --open",
@@ -56,7 +56,7 @@
     "nprogress": "0.2.0",
     "path-to-regexp": "2.4.0",
     "sass-loader": "^8.0.2",
-    "screenfull": "4.2.0",
+    "screenfull": "^4.2.0",
     "showdown": "^1.9.1",
     "sortablejs": "1.8.4",
     "tui-editor": "1.3.3",

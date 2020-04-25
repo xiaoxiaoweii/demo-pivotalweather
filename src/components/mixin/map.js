@@ -2,8 +2,8 @@ import axios from 'axios'
 export default {
     data(){
         return {
-            stationData:[], //站点数据
-          imageCode:null,//探空站点图片
+            stationData:[], //公共站点数据
+          imageCode:null,//公共站点图片
           mapView:null,
           cameraHeight:null,
           zoom:{
@@ -60,7 +60,7 @@ export default {
 
     //ui入口
     let viewer = new Cesium.Viewer('cesiumContainer',{
-        animation:false, //是否创建动画小器件，左下角仪表 
+        animation:false,//是否创建动画小器件，左下角仪表 
         timeline: false,//是否显示时间轴    
         sceneModePicker: false,//是否显示3D/2D选择器    
         baseLayerPicker: false,//是否显示图层选择器   
@@ -72,9 +72,11 @@ export default {
         showRenderLoopErrors: false,//如果设为true，将在一个HTML面板中显示错误信息 
         contextOptions:{
             webgl:{
-                preserveDrawingBuffer: true
+                preserveDrawingBuffer: true,
+                alpha:true
             }
-        }
+        },
+        orderIndependentTranslucency:false
     //      imageryProvider : new Cesium.OpenStreetMapImageryProvider({
     //     url : 'https://a.tile.openstreetmap.org/'
     // })
@@ -84,8 +86,10 @@ export default {
         // } ),
         // baseLayerPicker : false
     });
+    viewer.scene.skyBox.show = false
+    viewer.scene.backgroundColor = new Cesium.Color(0.0,0.0,0.0,0.0)
     this.mapView = viewer
-    this.mapView.camera.setView({destination:Cesium.Cartesian3.fromDegrees(116,30,15000000)});
+    this.mapView.camera.setView({destination:Cesium.Cartesian3.fromDegrees(116,30,30000000)});
     //影像标注加载
     let addImageryProvider = function(url){
         viewer.imageryLayers.addImageryProvider(new Cesium.WebMapTileServiceImageryProvider({
@@ -119,10 +123,10 @@ export default {
                         var popup = new MovePrompt(viewer, {
                                     name:"RED",
                                     type: 2,
-                                    popupCartesian: Cesium.Cartesian3.fromDegrees(setData[i].longitude, setData[i].latitude),
+                                    popupCartesian: Cesium.Cartesian3.fromDegrees(setData[i].lon, setData[i].lat),
                                             content: `
                                                         <div class="s-dialog-wrap">
-                                                        <span>${setData[i].shizhan + '&nbsp;' + setData[i].quzhan}<span/>
+                                                        <span>${setData[i].zhanhao}<span/>
                                                         </div>
                                                     `            
                                             }) ;
@@ -177,6 +181,9 @@ export default {
         }, Cesium.ScreenSpaceEventType.WHEEL);
     },
     methods: {
+        clearStation(){
+            this.mapView.entities.removeAll()
+        },
         mapMutipleAllDown(zoom){
             let centerLon = parseFloat(Cesium.Math.toDegrees(this.cartographic.longitude).toFixed(8));
             let centerLat = parseFloat(Cesium.Math.toDegrees(this.cartographic.latitude).toFixed(8));
@@ -202,55 +209,137 @@ export default {
                 });
     
         },
-        getCodeImage() {
-            let codeUrl = 'tankong/LBoDuan?zhanhao=南京&time=20160623&hourMin=2311'
+        getCodeImage(url,dataType) {
             return axios({
                 method: 'GET',
-                url: `${codeUrl}`,
-                responseType: 'arraybuffer'
+                url: `${url}`,
+                responseType: dataType
+            }).then(res => {
+                return 'data:image/png;base64,' + btoa(
+                new Uint8Array(res.data)
+                    .reduce((data, byte) => data + String.fromCharCode(byte), '')
+                )
+            }).then((res) => {
+                return res
+            }).catch((e) => {
+                return null
             })
         },
-          getStationData(){
-              axios({
-                    method: 'GET',
-                    url: 'tenwind/Query?daytime=2019-10-29 11:30:00&shizhan=全省&type=基本站',
-                    responseType: 'json'
-                }).then(res => {
-                   this.stationData = res.data.data
-                   //初始化镜头
-                   if(this.stationData.length)
-                    this.mapView.camera.setView({destination:Cesium.Cartesian3.fromDegrees(this.stationData[0].longitude,this.stationData[0].latitude,1500000)});
-                    //搜索探空图片
-                    this.getCodeImage()
-                    .then(res => {
-                        return 'data:image/png;base64,' + btoa(
-                        new Uint8Array(res.data)
-                            .reduce((data, byte) => data + String.fromCharCode(byte), '')
-                        )
-                    }).then((res) => {
-                        this.imageCode = res
-                         //设置站点
-                        this.stationData.forEach(
-                            (e,i,arr) => {
-                                this.mapView.entities.add({
-                                    name:e.shizhan+" "+e.quzhan+"站点信息",
-                                    description:'<div style="margin:30px"><img src="'+this.imageCode+'" width="600" height="500" /></div>',             
-                                    position:Cesium.Cartesian3.fromDegrees(e.longitude, e.latitude),
-                                    point : {
-                                        pixelSize : 5,
-                                        color : Cesium.Color.white
-                                    },
-                                    comments:'event'+e.id
-                                })
-                            }
-                        )
-                    }).catch((e) => {
-                    })
-                }).catch((e) => {
-                })
+        getRadarData(){//探空雷达
+            this.clearStation()
+            this.loading = true
+            axios({
+                method: 'GET',
+                url: 'lbo/show',
+                responseType: 'json'
+            }).then(res => {
+                if(res.data && res.data.data.length){
+                    this.loading = false
+                    let tData = res.data.data
+                    this.stationData = tData
+                    this.$refs.zm.curMutipleValue = 4
+                    this.$refs.zm.zoomUpOfMap()
+                    tData.forEach(
+                        (e,i,arr) => {
+                            let skyUrl = 'lbo/lbd?name='+e.zhanhao+'&time=2016-06-23 23:15:00'
+                            this.getCodeImage(skyUrl,'arraybuffer').then((img)=>{
+                                this.addEntities(e.id,e.zhanhao,'',e.lon,e.lat,img)
+                            })
+                        }
+                    )
+                }
+                else{
+                    this.$message.error('探空雷达站点无数据！')
+                    return
+                }
+            }).catch((e) => {
+            })
+        },
+        addEntities(id,shi,qu,lon,lat,imgCode){
+            this.mapView.entities.add({
+                name:shi+qu+"站点信息",
+                description:'<div style="margin:30px"><img src="'+imgCode+'" width="600" height="500" /></div>',             
+                position:Cesium.Cartesian3.fromDegrees(lon, lat),
+                point : {
+                    pixelSize : 5,
+                    color : Cesium.Color.white
+                },
+                comments:'event'+id
+            })
+        },
+        getWeiboRadiation(){//微波辐射
+            this.clearStation()
+            this.loading = true
+            axios({
+                method: 'GET',
+                url: 'wind/show',
+                responseType: 'json'
+            }).then(res => {
+                if(res.data && res.data.data.length){
+                    this.loading = false
+                    let wData = res.data.data
+                    this.stationData = wData
+                    // if(wData.length)
+                    // this.mapView.camera.setView({destination:Cesium.Cartesian3.fromDegrees(wData[0].lon,wData[0].lat,30000000)});
+                    this.$refs.zm.curMutipleValue = 4
+                    this.$refs.zm.zoomUpOfMap()
+                    wData.forEach(
+                        (e,i,arr) => {
+                            let codeUrl = 'wind/getMwv?name=20200401/'+e.zhanhao+'/2020-04-01_00-03-00_lv2_401.csv.png'
+                            this.getCodeImage(codeUrl,'arraybuffer').then((img)=>{
+                                this.addEntities(e.id,e.zhanhao,'',e.lon,e.lat,img)
+                            })
+                        }
+                    )
+                }
+                else{
+                    this.$message.error('微波辐射站点无数据！')
+                    return
+                }
+            }).catch((e) => {
+            })
+        },
+        getAutoStationData(){//自动站
+            this.clearStation()
+            this.loading = true
+            axios({
+                method: 'GET',
+                url: 'instand/showl',
+                responseType: 'json'
+            }).then(res => {
+                if(res.data && res.data.data.length){
+                    this.loading = false
+                    let autoData = res.data.data
+                    this.stationData = autoData
+                    this.$refs.zm.curMutipleValue = 4
+                    this.$refs.zm.zoomUpOfMap()
+                    autoData.forEach(
+                        (e,i,arr) => {
+                            let codeUrl = 'aotu/show?name=20200401/'+e.zhanhao+'/2020-04-01_00-03-00_lv2_401.csv.png'
+                            this.getCodeImage(codeUrl,'arraybuffer').then((img)=>{
+                                this.addEntities(e.iid,e.zhanhao,'',e.lon,e.lat,img)
+                            })
+                        }
+                    )
+                }
+                else{
+                    this.$message.error('自动站无数据！')
+                    return
+                }
+            }).catch((e) => {
+            })
+        },
+          getStationData(flag){
+            if(flag == 3){
+                this.getAutoStationData()
+            }else if(flag == 4){
+                this.getRadarData()
+            }else if(flag == 5){
+                this.getWeiboRadiation()
+            }
           },
-          imgPlayRootOn(countIndex){
-              this.getStationData()
+          imgPlayRootOn(countIndex,flag){
+              this.getStationData(flag)
           }  
     }
 }
