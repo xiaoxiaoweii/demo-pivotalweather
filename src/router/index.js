@@ -48,6 +48,11 @@ const constRouter = [
     path: '/',
     name: '首页',
     component: () => import('@/components/indexPage')
+  },
+  {
+    path: '/timelineProgress',
+    name: '首页',
+    component: () => import('@/components/pivotalWeather/components/timelineProgress')
   }
   // {
   //   path: '/profile',
